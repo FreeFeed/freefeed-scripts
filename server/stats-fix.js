@@ -27,26 +27,38 @@ var run = async function() {
   var userIds = await* usernames.map((username) => database.getAsync(username))
   var users = await* userIds.map((userId) => models.FeedFactory.findById(userId))
 
-  await* users.map(async (user) => {
-    console.log(`Patching user ${user.id}.`)
-    // sync posts counter
-    let timelineId = await user.getPostsTimelineId()
-    let num = await database.zcountAsync(mkKey(['timeline', timelineId, 'posts']), '-inf', '+inf')
-    await database.hset(mkKey(['stats', user.id]), 'posts', num)
+  for (let usersChunk of _.chunk(users, 2)) {
+    await* usersChunk.map(async (user) => {
+      console.log(`Patching user ${user.id}.`)
+      // sync posts counter
+      let timelineId = await user.getPostsTimelineId()
+      let num = await database.zcountAsync(mkKey(['timeline', timelineId, 'posts']), '-inf', '+inf')
+      await database.hset(mkKey(['stats', user.id]), 'posts', num)
 
-    // sync likes counter
-    timelineId = await user.getLikesTimelineId()
-    num = await database.zcountAsync(mkKey(['timeline', timelineId, 'posts']), '-inf', '+inf')
-    await database.hset(mkKey(['stats', user.id]), 'likes', num)
+      // sync likes counter
+      timelineId = await user.getLikesTimelineId()
+      num = await database.zcountAsync(mkKey(['timeline', timelineId, 'posts']), '-inf', '+inf')
+      await database.hset(mkKey(['stats', user.id]), 'likes', num)
 
-    // sync subscribers counter
-    num = await database.zcountAsync(mkKey(['timeline', timelineId, 'subscribers']), '-inf', '+inf')
-    await database.hset(mkKey(['stats', user.id]), 'subscribers', num)
+      // sync subscribers counter
+      num = await database.zcountAsync(mkKey(['timeline', timelineId, 'subscribers']), '-inf', '+inf')
+      await database.hset(mkKey(['stats', user.id]), 'subscribers', num)
 
-    // sync subscriptions counter
-    num = await database.zcountAsync(mkKey(['user', user.id, 'subscriptions']), '-inf', '+inf') / 3
-    await database.hset(mkKey(['stats', user.id]), 'subscriptions', num)
-  })
+      // sync subscriptions counter
+      num = await database.zcountAsync(mkKey(['user', user.id, 'subscriptions']), '-inf', '+inf')
+      await database.hset(mkKey(['stats', user.id]), 'subscriptions', num / 3)
+
+      if (num % 3 != 0) {
+        console.log(`${user.username} subscriptions count is ${num}`)
+
+        // Some extra patching is required
+        // Go through this user's subscriptions, calculate number of times each user is in
+        // subscriptions - if less than 3, subscribe again
+        // let subscriptionTimelines = await database.zrangeAsync(mkKey(['user', user.id, 'subscriptions']), 0, -1)
+
+      }
+    })
+  }
 }
 
 run()
