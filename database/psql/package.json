@@ -1,0 +1,24 @@
+{
+  "name": "postgres-dabbling",
+  "version": "1.0.0",
+  "description": "",
+  "main": "generate-1000-users.js",
+  "dependencies": {
+    "bookshelf": "^0.8.2",
+    "crypto": "0.0.3",
+    "fs": "0.0.2",
+    "knex": "^0.8.6",
+    "lodash": "^3.10.1",
+    "pg": "^4.4.2",
+    "uuid": "^2.0.1"
+  },
+  "devDependencies": {
+    "babel": "^5.8.23"
+  },
+  "author": "Berkus",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FreeFeed/freefeed-scripts.git"
+  },
+  "license": "MIT"
+}
